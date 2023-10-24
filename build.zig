@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.addAssemblyFile(std.build.FileSource.relative(
-        "src/reset_vector.s"
+        "src/asm/reset_vector.s"
     ));
     exe.setLinkerScript(std.build.FileSource.relative("linker.ld"));
     b.installArtifact(exe);
