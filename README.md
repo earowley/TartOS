@@ -1,3 +1,10 @@
-# TartOS
+<p align="center">
+    <picture>
+      <img src="logo.png" height="256">
+    </picture>
+    <h1 align="center" style="margin: 0">TartOS</h1>
+</p>
 
-A bare metal operating system for the Raspberry Pi 3, written in Zig.
+## About
+
+TartOS is a bare-metal operating system for the RPi3, written in Zig.
