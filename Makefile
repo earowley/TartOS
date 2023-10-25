@@ -1,5 +1,6 @@
 ZIG_SOURCES = $(wildcard src/**/*.zig) src/main.zig
 ASM_SOURCES = $(wildcard src/asm/*.s)
+LINKER = linker.ld
 ELF = zig-out/bin/rpi
 IMG = kernel8.img
 
@@ -9,7 +10,7 @@ elf: $(ELF)
 $(IMG): $(ELF)
 	llvm-objcopy -O binary $(ELF) $(IMG)
 
-$(ELF): $(ZIG_SOURCES) $(ASM_SOURCES)
+$(ELF): $(ZIG_SOURCES) $(ASM_SOURCES) $(LINKER)
 	zig build
 
 run: $(IMG)
