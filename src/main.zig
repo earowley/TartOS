@@ -1,24 +1,11 @@
-const gpio = @import("hardware/gpio.zig").gpio;
-const aux  = @import("hardware/aux.zig").aux;
+const serial = @import("rtos/io/serial.zig");
 
 export fn main() noreturn {
-    gpio.fnSel(14, .alt5);
-    gpio.fnSel(15, .alt5);
-    aux.muEnable();
-    aux.muDisableComm();
-    aux.muSetDataSize(.mu8bit);
-    aux.muClearFIFOs();
-    aux.mu_baud = 270;
-    aux.muEnableComm();
-
-    const message = "Hello world!";
-
-    for (message) |c| {
-        aux.muSendByte(c);
-    }
-
-    aux.muSendByte('\r');
-    aux.muSendByte('\n');
+    serial.initMU();
+    serial.println("Hello world!");
+    serial.println("Second line");
+    var magic: u32 = 42;
+    serial.printf("The magic number is: {}\n", .{magic});
 
     while (true) {}
 }

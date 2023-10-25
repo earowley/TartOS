@@ -2,6 +2,11 @@ const std = @import("std");
 const c = @import("constants.zig");
 const clock = @import("clock.zig");
 
+/// Interface directly with the GPIO hardware. This structure
+/// is mapped to the CPU's MMIO address space.
+pub const gpio: *volatile GPIO = @ptrFromInt(c.mmio_base + 0x200000);
+
+/// Helper structure for GPIO hardware.
 pub const GPIO = extern struct {
     pub const pin_count = 54;
     const Self = *volatile @This();
@@ -33,6 +38,8 @@ pub const GPIO = extern struct {
 
     comptime {std.debug.assert(@sizeOf(GPIO) == 0xA0);}
 
+    /// Program the specified GPIO `pin` to one of its alternate
+    /// function `num`.
     pub fn fnSel(self: Self, pin: u8, num: FnSel) void {
         std.debug.assert(pin < pin_count);
         const idx: usize = pin / 10;
@@ -44,18 +51,21 @@ pub const GPIO = extern struct {
         self.gpfsel[idx] = temp;
     }
 
+    /// Set the output of the specified GPIO `pin`.
     pub fn set(self: Self, pin: u8) void {
         std.debug.assert(pin < pin_count);
         const idx: usize = if (pin < 32) 0 else 1;
         self.gpset[idx] |= (@as(u32, 1) << @intCast(pin & 31));
     }
 
+    /// Clear the output of the specified GPIO `pin`.
     pub fn clear(self: Self, pin: u8) void {
         std.debug.assert(pin < pin_count);
         const idx: usize = if (pin < 32) 0 else 1;
         self.gpclr[idx] |= (@as(u32, 1) << @intCast(pin & 31));
     }
 
+    /// Query the status of the specified GPIO `pin`.
     pub fn status(self: Self, pin: u8) bool {
         std.debug.assert(pin < pin_count);
         const idx: usize = if (pin < 32) 0 else 1;
@@ -63,6 +73,7 @@ pub const GPIO = extern struct {
         return s > 0;
     }
 
+    /// Set the pull-up/down state of the given `pin`.
     pub fn pud(self: Self, pin: u8, sel: PUD) void {
         std.debug.assert(sel != .reserved);
         std.debug.assert(pin < pin_count);
@@ -76,6 +87,7 @@ pub const GPIO = extern struct {
     }
 };
 
+/// Available functions for GPIO pins.
 pub const FnSel = enum(u3) {
     input,
     output,
@@ -87,11 +99,10 @@ pub const FnSel = enum(u3) {
     alt3,
 };
 
+/// Available pull-down actuations for GPIO pins.
 pub const PUD = enum(u2) {
     disable,
     pull_up,
     pull_down,
     reserved,
 };
-
-pub const gpio: *volatile GPIO = @ptrFromInt(c.mmio_base + 0x200000);
