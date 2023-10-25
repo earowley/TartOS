@@ -13,7 +13,7 @@ $(ELF): $(ZIG_SOURCES) $(ASM_SOURCES)
 	zig build
 
 run: $(IMG)
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -d in_asm
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio
 
 clean:
 	rm -f $(ELF) $(IMG)
