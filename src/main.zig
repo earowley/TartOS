@@ -3,7 +3,7 @@ const mbox = @import("hardware/mbox.zig").mbox;
 
 export fn main() noreturn {
     serial.initMU();
-    serial.printf("Firmware revision: 0x{X}\n",
+    serial.printf("firmware revision: 0x{X}\n",
         .{mbox.firmwareRevision()});
     serial.printf("core clock speed: {} MHz\n",
         .{mbox.clockSpeed(.core)/1000000});

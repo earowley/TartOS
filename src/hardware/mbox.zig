@@ -1,8 +1,11 @@
 const std = @import("std");
 const c = @import("constants.zig");
 
+/// Interface directly with the ARM->VC mailbox. This pointer
+/// is mapped to the CPU's MMIO address space.
 pub const mbox: *volatile Mailbox = @ptrFromInt(c.mmio_base + 0xB880);
 
+/// Helper structure for mailbox interfacing.
 pub const Mailbox = extern struct {
     const Self = *volatile @This();
     const mbox_size = 16;
@@ -37,6 +40,7 @@ pub const Mailbox = extern struct {
         unreachable;
     }
 
+    /// Retrieve the system's serial number from the mailbox.
     pub fn serialNumber(self: Self) u64 {
         buffer[0] = 8 * @sizeOf(u32);
         buffer[1] = mbox_request;
@@ -55,6 +59,7 @@ pub const Mailbox = extern struct {
         return 0xDEADBEEF;
     }
 
+    /// Retrieve the current firmware revision from the mailbox.
     pub fn firmwareRevision(self: Self) u32 {
         buffer[0] = 7 * @sizeOf(u32);
         buffer[1] = mbox_request;
@@ -70,6 +75,7 @@ pub const Mailbox = extern struct {
         return 0xDEADBEEF;
     }
 
+    /// Retrieve the clock speed (in Hz) of `clock` from the mailbox.
     pub fn clockSpeed(self: Self, clock: ClockID) u32 {
         buffer[0] = 8 * @sizeOf(u32);
         buffer[1] = mbox_request;
@@ -88,6 +94,8 @@ pub const Mailbox = extern struct {
         return 0xDEADBEEF;
     }
 
+    /// Retrieve the measured clock speed (in Hz) of `clock` from the
+    /// mailbox. This may not work on QEMU.
     pub fn clockSpeedEx(self: Self, clock: ClockID) u32 {
         buffer[0] = 8 * @sizeOf(u32);
         buffer[1] = mbox_request;
@@ -106,6 +114,8 @@ pub const Mailbox = extern struct {
         return 0xDEADBEEF;
     }
 
+    /// Set the clock speed of `clock` to the specified frequency `hz`.
+    /// Turbo settings are automatically adjusted by the firmware.
     pub fn setClockSpeed(self: Self, clock: ClockID, hz: u32) u32 {
         buffer[0] = 9 * @sizeOf(u32);
         buffer[1] = mbox_request;
@@ -126,7 +136,7 @@ pub const Mailbox = extern struct {
     }
 };
 
-pub const Tag = enum(u32) {
+const Tag = enum(u32) {
     terminator = 0x0,
     get_firmware_revision = 0x1,
     get_serial = 0x10004,
@@ -135,6 +145,7 @@ pub const Tag = enum(u32) {
     set_clock_rate = 0x38002,
 };
 
+/// Clocks for interfacing with the mailbox.
 pub const ClockID = enum(u32) {
     reserved,
     emmc,
