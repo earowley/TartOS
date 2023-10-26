@@ -1,11 +1,14 @@
 const serial = @import("rtos/io/serial.zig");
+const mbox = @import("hardware/mbox.zig").mbox;
 
 export fn main() noreturn {
     serial.initMU();
-    serial.println("Hello world!");
-    serial.println("Second line");
-    var magic: u32 = 42;
-    serial.printf("The magic number is: {}\n", .{magic});
+    serial.printf("Firmware revision: 0x{X}\n",
+        .{mbox.firmwareRevision()});
+    serial.printf("core clock speed: {} MHz\n",
+        .{mbox.clockSpeed(.core)/1000000});
+    serial.printf("arm clock speed: {} MHz\n",
+        .{mbox.clockSpeed(.arm)/1000000});
 
     while (true) {}
 }
