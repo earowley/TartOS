@@ -1,6 +1,6 @@
 const std = @import("std");
 const c = @import("constants.zig");
-const clock = @import("clock.zig");
+const arm = @import("arm.zig");
 
 /// Interface directly with the GPIO hardware. This structure
 /// is mapped to the CPU's MMIO address space.
@@ -78,10 +78,10 @@ pub const GPIO = extern struct {
         std.debug.assert(sel != .reserved);
         std.debug.assert(pin < pin_count);
         self.gppud = @intFromEnum(sel);
-        clock.waitCycles(150);
+        arm.waitCycles(150);
         const idx: usize = if (pin < 32) 0 else 1;
         self.gppudclk[idx] |= (@as(u32, 1) << @intCast(pin & 31));
-        clock.waitCycles(150);
+        arm.waitCycles(150);
         self.gppud = 0;
         self.gppudclk[idx] = 0;
     }

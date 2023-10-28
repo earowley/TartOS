@@ -64,13 +64,13 @@ pub const UART = extern struct {
 
     /// Enqueue a byte on the transmit FIFO.
     pub fn sendByte(self: Self, data: u8) void {
-        while(self.flags().send_fifo_full) {}
+        while (self.flags().send_fifo_full) {}
         self.data = data;
     }
 
     /// Read a byte from the receive FIFO.
     pub fn recvByte(self: Self) u8 {
-        while(self.flags().recv_fifo_empty) {}
+        while (self.flags().recv_fifo_empty) {}
         const data: Data = @bitCast(self.data);
         return data.data;
     }
