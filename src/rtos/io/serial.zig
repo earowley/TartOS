@@ -2,7 +2,7 @@ const std = @import("std");
 const gpio = @import("../../hardware/gpio.zig").gpio;
 const aux = @import("../../hardware/aux.zig").aux;
 const uart = @import("../../hardware/uart.zig");
-const mbox = @import("../../hardware/mbox.zig").mbox;
+const Mailbox = @import("../../hardware/mbox.zig").Mailbox;
 
 const MUWriter = std.io.Writer(void, WriteError, muWrite);
 const UARTWriter = std.io.Writer(void, WriteError, uartWrite);
@@ -44,7 +44,7 @@ fn initUART() void {
     const baud = 115200;
     const brs = comptime uart.baud(baud, uart_clock);
     std.debug.assert(
-        mbox.setClockSpeed(.uart, uart_clock) == uart_clock
+        Mailbox.setClockSpeed(.uart, uart_clock) == uart_clock
     );
     std.debug.assert(!uart.uart.control().uart_en);
     gpio.fnSel(14, .alt0);
