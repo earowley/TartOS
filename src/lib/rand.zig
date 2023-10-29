@@ -1,4 +1,4 @@
-const hrng = @import("../hardware/rng.zig").rng;
+const hrng = @import("hardware").rng.rng;
 
 fn betweenHRNG(a: u64, b: u64) u64 {
     var min: u64 = undefined;

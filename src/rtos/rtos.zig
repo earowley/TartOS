@@ -1,13 +1,14 @@
 const std = @import("std");
-const serial = @import("rtos/io/serial.zig");
-const hrng = @import("hardware/rng.zig").rng;
-const rand = @import("rtos/rand.zig");
-const Mailbox = @import("hardware/mbox.zig").Mailbox;
+const lib = @import("lib");
+const hw = @import("hardware");
+const serial = lib.io.serial;
+const rand = lib.rand;
+const Mailbox = hw.mbox.Mailbox;
 const StackTrace = std.builtin.StackTrace;
 
 export fn main() noreturn {
     serial.initSerialStreams();
-    hrng.init();
+    hw.rng.rng.init();
     serial.printf("serial number: 0x{X}\n",
         .{Mailbox.serialNumber()});
     serial.printf("firmware revision: 0x{X}\n",

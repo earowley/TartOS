@@ -10,16 +10,35 @@ pub fn build(b: *std.Build) void {
 
     // Use the optimization settings from command line.
     const optimize = b.standardOptimizeOption(.{});
+    const hardware = b.createModule(std.build.CreateModuleOptions{
+        .source_file = .{.path = "src/hardware/hardware.zig"},
+    });
+    const lib = b.createModule(std.build.CreateModuleOptions{
+        .source_file = .{.path = "src/lib/lib.zig"},
+        .dependencies = &.{
+            .{.name = "hardware", .module = hardware},
+        },
+    });
+    const rtos = b.createModule(std.build.CreateModuleOptions{
+        .source_file = .{.path = "src/rtos/rtos.zig"},
+        .dependencies = &.{
+            .{.name = "hardware", .module = hardware},
+            .{.name = "lib", .module = lib}
+        },
+    });
 
     const exe = b.addExecutable(.{
-        .name = "rpi",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .name = "rtos",
+        .root_source_file = .{.path = "src/rtos/rtos.zig"},
         .target = target,
         .optimize = optimize,
     });
 
+    exe.addModule("lib", lib);
+    exe.addModule("hardware", hardware);
+    exe.addModule("rtos", rtos);
     exe.addAssemblyFile(std.build.FileSource.relative(
-        "src/asm/reset_vector.s"
+        "src/rtos/asm/reset_vector.s"
     ));
     exe.setLinkerScript(std.build.FileSource.relative("linker.ld"));
     b.installArtifact(exe);

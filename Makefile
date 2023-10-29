@@ -1,7 +1,7 @@
-ZIG_SOURCES = $(wildcard src/**/*.zig) src/main.zig
+ZIG_SOURCES = $(wildcard src/*/*.zig) $(wildcard src/*/*/*.zig)
 ASM_SOURCES = $(wildcard src/asm/*.s)
 LINKER = linker.ld
-ELF = zig-out/bin/rpi
+ELF = zig-out/bin/rtos
 IMG = kernel8.img
 
 img: $(IMG)

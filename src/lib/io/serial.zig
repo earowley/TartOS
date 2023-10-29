@@ -1,8 +1,9 @@
 const std = @import("std");
-const gpio = @import("../../hardware/gpio.zig").gpio;
-const aux = @import("../../hardware/aux.zig").aux;
-const uart = @import("../../hardware/uart.zig");
-const Mailbox = @import("../../hardware/mbox.zig").Mailbox;
+const hw = @import("hardware");
+const gpio = hw.gpio.gpio;
+const aux = hw.aux.aux;
+const uart = hw.uart;
+const Mailbox = hw.mbox.Mailbox;
 
 const MUWriter = std.io.Writer(void, WriteError, muWrite);
 const UARTWriter = std.io.Writer(void, WriteError, uartWrite);
