@@ -3,17 +3,17 @@ const c = @import("constants.zig");
 
 /// Helper structure for mailbox interfacing.
 pub const Mailbox = extern struct {
+    /// Interface directly with the ARM->VC mailbox. This pointer
+    /// is mapped to the CPU's MMIO address space.
+    pub const resource: Self = @ptrFromInt(c.mmio_base + 0xB880);
     const Self = *volatile @This();
-    const mbox_size = 16;
+    const mbox_size = 40;
     const chan_arm_to_vc = 8;
     const mbox_full_mask = 0x80000000;
     const mbox_empty_mask = 0x40000000;
     const mbox_request = 0;
     const mbox_response = 0x80000000;
     var buffer: [mbox_size]u32 align(16) = [1]u32{0} ** mbox_size;
-    /// Interface directly with the ARM->VC mailbox. This pointer
-    /// is mapped to the CPU's MMIO address space.
-    pub const resource: Self = @ptrFromInt(c.mmio_base + 0xB880);
 
     read: u32,
     rsvd0: [3]u32,
@@ -25,6 +25,10 @@ pub const Mailbox = extern struct {
 
     fn send(self: Self) bool {
         comptime {std.debug.assert(buffer.len >= 2);}
+        // Size of entire message in bytes
+        std.debug.assert(buffer[0] > 0);
+        // Make sure we're always sending a request
+        std.debug.assert(buffer[1] == mbox_request);
         const mb_addr: u32 = @intCast(@intFromPtr(&buffer));
         const wr = mb_addr | chan_arm_to_vc;
         while ((self.status & mbox_full_mask) != 0) {}
@@ -35,8 +39,6 @@ pub const Mailbox = extern struct {
             if (wr == self.read)
                 return buffer[1] == mbox_response;
         }
-
-        unreachable;
     }
 
     /// Retrieve the system's serial number from the mailbox.
@@ -99,6 +101,21 @@ const Tag = enum(u32) {
     get_clock_rate = 0x30002,
     get_clock_rate_measured = 0x30047,
     set_clock_rate = 0x38002,
+    allocate_frame_buffer = 0x40001,
+    blank_screen = 0x40002,
+    release_frame_buffer = 0x48001,
+    set_physical_frame_buffer = 0x48003,
+    set_virtual_frame_buffer = 0x48004,
+    set_frame_buffer_depth = 0x48005,
+    set_frame_buffer_pixel_order = 0x48006,
+    get_frame_buffer_pitch = 0x40008,
+    set_virtual_frame_buffer_offset = 0x48009,
+};
+
+/// Possible pixel orders for the GPU frame buffer.
+pub const FrameBufferPixelOrder = enum(u32) {
+    bgr,
+    rgb,
 };
 
 /// Clocks for interfacing with the mailbox.
@@ -188,6 +205,113 @@ pub const SetClockSpeed = extern struct {
     id: ClockID = undefined,
     speed: u32 = 0,
     turbo: u32 = 0,
+};
+
+/// Allocate frame buffer tag information.
+pub const AllocateFrameBuffer = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.allocate_frame_buffer),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    in_align_out_address: u32 = undefined,
+    size_bytes: u32 = 0,
+};
+
+/// Blank screen tag information.
+pub const BlankScreen = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.allocate_frame_buffer),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    state: u32 = undefined,
+};
+
+/// Release frame buffer tag information.
+pub const ReleaseFrameBuffer = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.release_frame_buffer),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+};
+
+/// Set physical frame buffer tag information.
+pub const SetPhysicalFrameBuffer = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.set_physical_frame_buffer),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    width: u32 = undefined,
+    height: u32 = undefined,
+};
+
+/// Set virtual frame buffer tag information.
+pub const SetVirtualFrameBuffer = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.set_virtual_frame_buffer),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    width: u32 = undefined,
+    height: u32 = undefined,
+};
+
+/// Set frame buffer depth tag information.
+pub const SetFrameBufferDepth = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.set_frame_buffer_depth),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    bits_per_pixel: u32 = undefined,
+};
+
+/// Set frame buffer pixel order tag information.
+pub const SetFrameBufferPixelOrder = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.set_frame_buffer_pixel_order),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    pixel_order: u32 = undefined,
+
+    pub fn load(self: *volatile Self, order: FrameBufferPixelOrder)
+      void {
+        self.pixel_order = @intFromEnum(order);
+    }
+};
+
+/// Set frame buffer pixel order tag information.
+pub const GetFrameBufferPitch = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.get_frame_buffer_pitch),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    bytes_per_row: u32 = 0,
+};
+
+/// Set frame buffer pixel order tag information.
+pub const SetVirtualFrameBufferOffset = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.set_virtual_frame_buffer_offset),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    x: u32 = undefined,
+    y: u32 = undefined,
 };
 
 /// Convenience structure for sending mailbox "packages". A mailbox

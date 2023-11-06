@@ -38,7 +38,7 @@ pub fn build(b: *std.Build) void {
     exe.addModule("hardware", hardware);
     exe.addModule("rtos", rtos);
     exe.addAssemblyFile(std.build.FileSource.relative(
-        "src/rtos/asm/reset_vector.s"
+        "src/reset/reset_vector.s"
     ));
     exe.setLinkerScript(std.build.FileSource.relative("linker.ld"));
     b.installArtifact(exe);

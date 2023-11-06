@@ -1,5 +1,5 @@
 ZIG_SOURCES = $(wildcard src/*/*.zig) $(wildcard src/*/*/*.zig)
-ASM_SOURCES = $(wildcard src/asm/*.s)
+ASM_SOURCES = $(wildcard src/reset/*.s)
 LINKER = linker.ld
 ELF = zig-out/bin/rtos
 IMG = kernel8.img
@@ -18,3 +18,6 @@ run: $(IMG)
 
 clean:
 	rm -f $(ELF) $(IMG)
+
+reset: clean
+	rm -rf zig-cache/

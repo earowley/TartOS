@@ -1,12 +1,11 @@
 const std = @import("std");
 const c = @import("constants.zig");
 
-/// Interface directly with the RNG hardware. This structure
-/// is mapped to the CPU's MMIO address space.
-pub const rng: *volatile RNG = @ptrFromInt(c.mmio_base + 0x104000);
-
 /// Helper structure for RNG hardware.
 pub const RNG = extern struct {
+    /// Interface directly with the RNG hardware. This structure
+    /// is mapped to the CPU's MMIO address space.
+    pub const resource: Self = @ptrFromInt(c.mmio_base + 0x104000);
     const Self = *volatile @This();
     var initialized = false;
 

@@ -1,12 +1,11 @@
 const std = @import("std");
 const c = @import("constants.zig");
 
-/// Interface directly with the UART hardware. This structure
-/// is mapped to the CPU's MMIO address space.
-pub const uart: *volatile UART = @ptrFromInt(c.mmio_base + 0x201000);
-
 /// Helper structure for UART hardware.
 pub const UART = extern struct {
+    /// Interface directly with the UART hardware. This structure
+    /// is mapped to the CPU's MMIO address space.
+    pub const resource: Self = @ptrFromInt(c.mmio_base + 0x201000);
     const Self = *volatile @This();
 
     data: u32,
@@ -42,6 +41,11 @@ pub const UART = extern struct {
         return @bitCast(self.f_flags);
     }
 
+    /// Read the line control register bitfield.
+    pub fn lineControl(self: Self) LineControl {
+        return @bitCast(self.line_control);
+    }
+
     /// Read the control register bitfield.
     pub fn control(self: Self) Control {
         return @bitCast(self.f_control);
@@ -62,14 +66,26 @@ pub const UART = extern struct {
         return @bitCast(self.interrupt_mask_set_clear);
     }
 
-    /// Enqueue a byte on the transmit FIFO.
+    /// Enqueue a byte on the transmit FIFO. The caller should ensure
+    /// the UART is enabled and the transmit FIFO is enabled.
     pub fn sendByte(self: Self, data: u8) void {
+        std.debug.assert(
+            self.lineControl().fifo_enable and
+            self.control().uart_en and
+            self.control().transmit_en
+        );
         while (self.flags().send_fifo_full) {}
         self.data = data;
     }
 
-    /// Read a byte from the receive FIFO.
+    /// Read a byte from the receive FIFO. The caller should ensure the
+    /// UART is enabled and the receive FIFO is enabled.
     pub fn recvByte(self: Self) u8 {
+        std.debug.assert(
+            self.lineControl().fifo_enable and
+            self.control().uart_en and
+            self.control().receive_en
+        );
         while (self.flags().recv_fifo_empty) {}
         const data: Data = @bitCast(self.data);
         return data.data;

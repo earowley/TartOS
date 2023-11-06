@@ -1,12 +1,10 @@
 const c = @import("constants.zig");
 
-/// Interface directly with the timer hardware. This structure
-/// is mapped to the CPU's MMIO address space.
-pub const system_timer: *volatile SystemTimer = @ptrFromInt(
-    c.mmio_base + 0x3000);
-
 /// Helper structure for timer hardware.
 pub const SystemTimer = extern struct {
+    /// Interface directly with the timer hardware. This structure
+    /// is mapped to the CPU's MMIO address space.
+    pub const resource: Self = @ptrFromInt(c.mmio_base + 0x3000);
     /// Frequency of the timer in Hz. Always running at 1MHz.
     pub const frequency = 1000000;
     const Self = *volatile @This();

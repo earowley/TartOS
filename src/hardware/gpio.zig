@@ -2,12 +2,11 @@ const std = @import("std");
 const c = @import("constants.zig");
 const arm = @import("arm.zig");
 
-/// Interface directly with the GPIO hardware. This structure
-/// is mapped to the CPU's MMIO address space.
-pub const gpio: *volatile GPIO = @ptrFromInt(c.mmio_base + 0x200000);
-
 /// Helper structure for GPIO hardware.
 pub const GPIO = extern struct {
+    /// Interface directly with the GPIO hardware. This structure
+    /// is mapped to the CPU's MMIO address space.
+    pub const resource: Self = @ptrFromInt(c.mmio_base + 0x200000);
     pub const pin_count = 54;
     const Self = *volatile @This();
 

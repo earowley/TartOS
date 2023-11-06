@@ -1,4 +1,5 @@
-const hrng = @import("hardware").rng.rng;
+const std = @import("std");
+const hrng = @import("hardware").rng.RNG.resource;
 
 fn betweenHRNG(a: u64, b: u64) u64 {
     var min: u64 = undefined;
@@ -22,5 +23,6 @@ fn betweenHRNG(a: u64, b: u64) u64 {
 
 /// Returns a random number in the range [a,b].
 pub fn between(comptime T: type, a: T, b: T) T {
+    comptime {std.debug.assert(@typeInfo(T).Int.bits <= 64);}
     return @truncate(betweenHRNG(a, b));
 }

@@ -13,4 +13,5 @@ workerCpu:
 mainCpu:
     ldr x1, =resetVector
     mov sp, x1
+    bl initHardware
     b main
