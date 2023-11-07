@@ -20,36 +20,25 @@ export fn main() noreturn {
     core.printf("Random value: {}\n", .{rand.between(u16, 1, 1000)});
     const fb = lib.gfx.FrameBuffer.init(1024, 768, .rgb) catch
         fatal("Unable to create FrameBuffer!", @src());
-    core.printf("Framebuffer: {}\n", .{fb});
+    const grid = lib.gfx.Grid.init(
+        &fb, 20, 20, 10, 10, 3
+    ) catch unreachable;
 
     while (true) {
-        for (0..fb.height) |y| {
-            for (0..fb.width) |x| {
-                const p = fb.pixelAt(@intCast(x), @intCast(y));
-                p.rgb.r = 255;
-                p.rgb.g = 0;
-                p.rgb.b = 0;
+        for (0..grid.height) |y| {
+            for (0..grid.width) |x| {
+                var sect = grid.gridSectionUnchecked(@intCast(x), @intCast(y));
+                const rr = rand.between(u8, 0, 255);
+                const gr = rand.between(u8, 0, 255);
+                const br = rand.between(u8, 0, 255);
+                while (sect.next()) |pix| {
+                    pix.rgb.r = rr;
+                    pix.rgb.g = gr;
+                    pix.rgb.b = br;
+                }
             }
         }
-        hw.arm.usleep(500000);
-        for (0..fb.height) |y| {
-            for (0..fb.width) |x| {
-                const p = fb.pixelAt(@intCast(x), @intCast(y));
-                p.rgb.r = 0;
-                p.rgb.g = 255;
-                p.rgb.b = 0;
-            }
-        }
-        hw.arm.usleep(500000);
-        for (0..fb.height) |y| {
-            for (0..fb.width) |x| {
-                const p = fb.pixelAt(@intCast(x), @intCast(y));
-                p.rgb.r = 0;
-                p.rgb.g = 0;
-                p.rgb.b = 255;
-            }
-        }
-        hw.arm.usleep(500000);
+        hw.arm.usleep(250000);
     }
 }
 
