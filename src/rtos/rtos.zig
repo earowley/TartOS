@@ -7,6 +7,11 @@ const rand = lib.rand;
 const Mailbox = hw.mbox.Mailbox;
 const StackTrace = std.builtin.StackTrace;
 
+const raw_psf align(@alignOf(lib.gfx.PCScreenFont)) = @embedFile(
+    "assets/font.psf"
+).*;
+const font: *const lib.gfx.PCScreenFont = @ptrCast(&raw_psf);
+
 export fn main() noreturn {
     core.initCore();
     core.printf("serial number: 0x{X}\n",
@@ -17,28 +22,29 @@ export fn main() noreturn {
         .{Mailbox.clockSpeed(.core)/1000000});
     core.printf("arm clock speed: {} MHz\n",
         .{Mailbox.clockSpeed(.arm)/1000000});
-    core.printf("Random value: {}\n", .{rand.between(u16, 1, 1000)});
     const fb = lib.gfx.FrameBuffer.init(1024, 768, .rgb) catch
         fatal("Unable to create FrameBuffer!", @src());
-    const grid = lib.gfx.Grid.init(
-        &fb, 20, 20, 10, 10, 3
+    var tty = lib.io.Terminal.init(
+        &fb,
+        font,
+        10,
+        30,
+        0
     ) catch unreachable;
+    const writer = tty.writer();
+    writer.print("random value is: {}\n", .{rand.between(u16, 1, 1000)})
+        catch unreachable;
+    const spinners = [_]u8{'-', '\\', '|', '/'};
+    const sx = tty.cursor_x;
+    const sy = tty.cursor_y;
 
     while (true) {
-        for (0..grid.height) |y| {
-            for (0..grid.width) |x| {
-                var sect = grid.gridSectionUnchecked(@intCast(x), @intCast(y));
-                const rr = rand.between(u8, 0, 255);
-                const gr = rand.between(u8, 0, 255);
-                const br = rand.between(u8, 0, 255);
-                while (sect.next()) |pix| {
-                    pix.rgb.r = rr;
-                    pix.rgb.g = gr;
-                    pix.rgb.b = br;
-                }
-            }
+        for (spinners) |g| {
+            tty.writeASCIIByte(g);
+            tty.cursor_x = sx;
+            tty.cursor_y = sy;
+            hw.arm.usleep(100000);
         }
-        hw.arm.usleep(250000);
     }
 }
 

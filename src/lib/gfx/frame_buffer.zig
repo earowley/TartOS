@@ -93,7 +93,9 @@ pub const FrameBuffer = struct {
 
 /// Possible errors working with Grids.
 pub const GridError = error {
-    InvalidSpecification
+    InvalidSpecification,
+    UnsupportedFrame,
+    ZeroSections,
 };
 
 /// Frame buffer abstraction that makes it easier to work with simple
@@ -121,12 +123,28 @@ pub const Grid = struct {
         pad_y: u16,
         spacing: u8
     ) GridError!Grid {
-        if (section_width == 0 or section_height == 0)
+        const max_pad = std.math.maxInt(u16) / 2;
+        const max_dim = std.math.maxInt(u16);
+        const sub_x = pad_x << 1;
+        const sub_y = pad_y << 1;
+        if (
+            section_width == 0 or
+            section_height == 0 or
+            pad_x > max_pad or
+            pad_y > max_pad or
+            frame_buffer.width < sub_x or
+            frame_buffer.height < sub_y
+        )
             return GridError.InvalidSpecification;
-        const rem_x: u16 = @intCast(frame_buffer.width - 2 * pad_x);
-        const rem_y: u16 = @intCast(frame_buffer.height - 2 * pad_y);
+        if (
+            frame_buffer.width > max_dim or
+            frame_buffer.height > max_dim
+        )
+            return GridError.UnsupportedFrame;
+        const rem_x: u16 = @intCast(frame_buffer.width - sub_x);
+        const rem_y: u16 = @intCast(frame_buffer.height - sub_y);
         if (section_width > rem_x or section_height > rem_y)
-            return GridError.InvalidSpecification;
+            return GridError.ZeroSections;
 
         return Grid {
             .buffer = frame_buffer,
@@ -178,7 +196,7 @@ pub const GridSectionIterator = struct {
                 self.grid.buffer.bytes_per_row / @sizeOf(Pixel) -
                 self.grid.section_width;
         }
-        const result = &(self.pixel[0]);
+        const result = &self.pixel[0];
         self.x += 1;
         self.pixel += 1;
         return result;
@@ -189,6 +207,7 @@ pub const GridSectionIterator = struct {
 /// structure chosen should match with the one submitted to
 /// `FrameBuffer.init`.
 pub const Pixel = extern union {
+    val: u32,
     bgr: extern struct {
         b: u8,
         g: u8,
