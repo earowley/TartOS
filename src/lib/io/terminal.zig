@@ -97,13 +97,31 @@ pub const Terminal = struct {
         self.advanceCursor();
     }
 
+    /// Clear the screen by setting every pixel to the background color.
+    pub fn clear(self: *Terminal) void {
+        const data = self.grid.buffer.pixelData();
+        @memset(data, self.background);
+    }
+
     fn advanceCursor(self: *Terminal) void {
         if (self.cursor_x == self.grid.width - 1) {
             self.cursor_x = 0;
             if (self.cursor_y != self.grid.height - 1)
-                self.cursor_y += 1;
+                self.cursor_y += 1
+            else
+                self.scroll();
             return;
         }
         self.cursor_x += 1;
+    }
+
+    fn scroll(self: Terminal) void {
+        std.mem.copyForwards(
+            u8,
+            self.grid.rowDataUnchecked(0, self.grid.height - 1),
+            self.grid.rowDataUnchecked(1, self.grid.height)
+        );
+        @memset(self.grid.rowDataUnchecked(self.grid.height - 1,
+            self.grid.height), 0);
     }
 };

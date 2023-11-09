@@ -10,6 +10,7 @@ pub const FrameBufferError = error {
 /// An interface for creating and interacting with a GPU frame buffer.
 pub const FrameBuffer = struct {
     const bits_per_pixel = 32;
+    const bytes_per_pixel = bits_per_pixel / 8;
 
     address: usize,
     size: u32,
@@ -64,13 +65,21 @@ pub const FrameBuffer = struct {
     /// Use the firmware interface to destroy the current frame buffer.
     /// This is not tied to any particular instance of FrameBuffer, and
     /// does not always need to be called as there can only be one
-    /// frame buffer active. In other words, alling `init` will also
-    /// deinit any existing frame buffers.
+    /// frame buffer active. In other words, calling `init` will also
+    /// deinit any existing frame buffer.
     pub fn deinit() FrameBufferError!void {
         const P = mbox.Package(.{mbox.ReleaseFrameBuffer});
         P.init();
         if (!P.send())
             return FrameBufferError.FirmwareError;
+    }
+
+    /// Get the raw pixel data of this frame buffer.
+    pub fn pixelData(self: FrameBuffer) []Pixel {
+        var result: []Pixel = undefined;
+        result.ptr = @ptrFromInt(self.address);
+        result.len = self.size / bytes_per_pixel;
+        return result;
     }
 
     /// Get a pointer to the pixel data at the coordinate `x`, `y` or
@@ -86,8 +95,18 @@ pub const FrameBuffer = struct {
         return @ptrFromInt(
             self.address + 
             y * self.bytes_per_row + 
-            x * @sizeOf(Pixel)
+            x * bytes_per_pixel
         );
+    }
+
+    /// Get the raw pixel data in bytes from rows [`start`, `end`).
+    pub fn rowDataUnchecked(self: FrameBuffer, start: u32, end: u32)
+      []u8 {
+        const length = end - start;
+        const p: [*]u8 = @ptrFromInt(
+            self.address + start * self.bytes_per_row
+        );
+        return p[0..length*self.bytes_per_row];
     }
 };
 
@@ -174,6 +193,13 @@ pub const Grid = struct {
             ),
         };
     }
+
+    /// Get the raw pixel data in bytes from grid rows [`start`, `end`).
+    pub fn rowDataUnchecked(self: Grid, start: u16, end: u16) []u8 {
+        return self.buffer.rowDataUnchecked(
+            self.pad_y + start * (self.spacing + self.section_height),
+            self.pad_y + end * (self.spacing + self.section_height));
+    }
 };
 
 /// An iterator over the pixels in a grid section.
@@ -220,6 +246,10 @@ pub const Pixel = extern union {
         b: u8,
         a: u8,
     },
+
+    comptime {
+        std.debug.assert(@sizeOf(Pixel) == FrameBuffer.bytes_per_pixel);
+    }
 };
 
 fn subdivideScreen(size: u16, section_size: u16, spacing: u16) u16 {

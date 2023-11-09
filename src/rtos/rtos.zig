@@ -22,6 +22,7 @@ export fn main() noreturn {
         .{Mailbox.clockSpeed(.core)/1000000});
     core.printf("arm clock speed: {} MHz\n",
         .{Mailbox.clockSpeed(.arm)/1000000});
+    core.printf("random value is: {}\n", .{rand.between(u16, 1, 1000)});
     const fb = lib.gfx.FrameBuffer.init(1024, 768, .rgb) catch
         fatal("Unable to create FrameBuffer!", @src());
     var tty = lib.io.Terminal.init(
@@ -32,20 +33,21 @@ export fn main() noreturn {
         0
     ) catch unreachable;
     const writer = tty.writer();
-    writer.print("random value is: {}\n", .{rand.between(u16, 1, 1000)})
-        catch unreachable;
+    writer.print("clearing screen...\n", .{}) catch unreachable;
     const spinners = [_]u8{'-', '\\', '|', '/'};
     const sx = tty.cursor_x;
     const sy = tty.cursor_y;
 
-    while (true) {
-        for (spinners) |g| {
-            tty.writeASCIIByte(g);
-            tty.cursor_x = sx;
-            tty.cursor_y = sy;
-            hw.arm.usleep(100000);
-        }
+    for (0..40) |idx| {
+        tty.writeASCIIByte(spinners[idx & 3]);
+        tty.cursor_x = sx;
+        tty.cursor_y = sy;
+        hw.arm.usleep(100000);
     }
+
+    tty.clear();
+
+    while (true) {}
 }
 
 pub fn panic(msg: []const u8, _: ?*StackTrace, _: ?usize) noreturn {
