@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("constants.zig");
+const GPIO = @import("gpio.zig").GPIO;
 
 /// Helper structure for UART hardware.
 pub const UART = extern struct {
@@ -64,6 +65,25 @@ pub const UART = extern struct {
     /// Read the interrupt mask bitfield.
     pub fn interruptMasks(self: Self) Interrupts {
         return @bitCast(self.interrupt_mask_set_clear);
+    }
+
+    /// Enable the UART. It is the caller's job to ensure the GPIO
+    /// pins are programmed correctly prior to calling this function.
+    pub fn enable(self: Self) void {
+        std.debug.assert(
+            GPIO.resource.fnSts(14) == .alt0 and
+            GPIO.resource.fnSts(15) == .alt0
+        );
+        var ctl = self.control();
+        ctl.uart_en = true;
+        self.f_control = @bitCast(ctl);
+    }
+
+    /// Disable the UART.
+    pub fn disable(self: Self) void {
+        var ctl = self.control();
+        ctl.uart_en = false;
+        self.f_control = @bitCast(ctl);
     }
 
     /// Enqueue a byte on the transmit FIFO. The caller should ensure

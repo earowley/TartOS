@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("constants.zig");
+const GPIO = @import("gpio.zig").GPIO;
 
 /// Helper structure for AUX hardware.
 pub const AUX = extern struct {
@@ -32,6 +33,9 @@ pub const AUX = extern struct {
     /// before any other mini UART operations, as it enables access
     /// to the registers.
     pub fn muEnable(self: Self) void {
+        std.debug.assert(
+            GPIO.resource.fnSts(14) == .alt5 and
+            GPIO.resource.fnSts(15) == .alt5);
         var tmp: Enables = @bitCast(self.enables);
         tmp.mu = true;
         self.enables = @bitCast(tmp);

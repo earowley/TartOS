@@ -2,11 +2,6 @@ const std = @import("std");
 const hw = @import("hardware");
 const mbox = hw.mbox;
 
-/// Possible errors when working with frame buffers.
-pub const FrameBufferError = error {
-    FirmwareError,
-};
-
 /// An interface for creating and interacting with a GPU frame buffer.
 pub const FrameBuffer = struct {
     const bits_per_pixel = 32;
@@ -23,7 +18,7 @@ pub const FrameBuffer = struct {
         width: u32,
         height: u32,
         pixel_order: mbox.FrameBufferPixelOrder
-    ) FrameBufferError!FrameBuffer {
+    ) FrameBuffer {
         const P = mbox.Package(.{
             mbox.SetPhysicalFrameBuffer,
             mbox.SetVirtualFrameBuffer,
@@ -50,8 +45,7 @@ pub const FrameBuffer = struct {
         const alloc = P.payload(5);
         alloc.in_align_out_address = 0x1000;
 
-        if (!P.send())
-            return FrameBufferError.FirmwareError;
+        P.send();
 
         return .{
             .address = alloc.in_align_out_address,
@@ -67,11 +61,10 @@ pub const FrameBuffer = struct {
     /// does not always need to be called as there can only be one
     /// frame buffer active. In other words, calling `init` will also
     /// deinit any existing frame buffer.
-    pub fn deinit() FrameBufferError!void {
+    pub fn deinit() void {
         const P = mbox.Package(.{mbox.ReleaseFrameBuffer});
         P.init();
-        if (!P.send())
-            return FrameBufferError.FirmwareError;
+        P.send();
     }
 
     /// Get the raw pixel data of this frame buffer.

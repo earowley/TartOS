@@ -6,7 +6,7 @@ const uart = hw.uart.UART.resource;
 const Mailbox = hw.mbox.Mailbox;
 
 /// Errors that can occur working with serial streams.
-pub const SerialError = error {HardwareBusy};
+pub const SerialError = error {HardwareBusy, BadClock};
 /// Writer interface implemented with the mini UART. The easiest way
 /// to get an instance of this struct is by calling `initMU`.
 pub const MUWriter = std.io.Writer(void, SerialError, muWrite);
@@ -36,6 +36,8 @@ pub fn initMU() SerialError!MUWriter {
     const sys_clk = Mailbox.clockSpeed(.system);
     const bd = ((sys_clk / baud) >> 3) - 1;
     current_writer = .mini_uart;
+    if (aux.enables().mu)
+        aux.muDisable();
     // Alt5 = TXD1/RXD1 on these pins.
     gpio.fnSel(14, .alt5);
     gpio.fnSel(15, .alt5);
@@ -63,10 +65,10 @@ pub fn initUART() SerialError!UARTWriter {
         return uart_writer;
     }
     current_writer = .uart;
-    std.debug.assert(
-        Mailbox.setClockSpeed(.uart, uart_clock) == uart_clock
-    );
-    std.debug.assert(!uart.control().uart_en);
+    if (Mailbox.setClockSpeed(.uart, uart_clock) != uart_clock)
+        return SerialError.BadClock;
+    if (uart.control().uart_en)
+        uart.disable();
     gpio.fnSel(14, .alt0);
     gpio.fnSel(15, .alt0);
     uart.baud_divisor = brs.i;
@@ -76,10 +78,7 @@ pub fn initUART() SerialError!UARTWriter {
         .word_length = .ua8bit,
     };
     uart.line_control = @bitCast(lc);
-    const ctl: hw.uart.Control = .{
-        .uart_en = true,
-    };
-    uart.f_control = @bitCast(ctl);
+    uart.enable();
     return uart_writer;
 }
 

@@ -50,6 +50,14 @@ pub const GPIO = extern struct {
         self.gpfsel[idx] = temp;
     }
 
+    /// Query the specified GPIO `pin` for its function.
+    pub fn fnSts(self: Self, pin: u8) FnSel {
+        std.debug.assert(pin < pin_count);
+        const idx: usize = pin / 10;
+        const sh: u5 = @intCast((pin % 10) * 3);
+        return @enumFromInt((self.gpfsel[idx] >> sh) & 7);
+    }
+
     /// Set the output of the specified GPIO `pin`.
     pub fn set(self: Self, pin: u8) void {
         std.debug.assert(pin < pin_count);

@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("constants.zig");
+const arm = @import("arm.zig");
 
 /// Helper structure for mailbox interfacing.
 pub const Mailbox = extern struct {
@@ -13,6 +14,8 @@ pub const Mailbox = extern struct {
     const mbox_empty_mask = 0x40000000;
     const mbox_request = 0;
     const mbox_response = 0x80000000;
+    const send_timeout_us = 100000;
+    const SendError = error{Timeout, InvalidResponse};
     var buffer: [mbox_size]u32 align(16) = [1]u32{0} ** mbox_size;
 
     read: u32,
@@ -23,7 +26,7 @@ pub const Mailbox = extern struct {
     config: u32,
     write: u32,
 
-    fn send(self: Self) bool {
+    fn send(self: Self) SendError!void {
         comptime {std.debug.assert(buffer.len >= 2);}
         // Size of entire message in bytes
         std.debug.assert(buffer[0] > 0);
@@ -31,22 +34,45 @@ pub const Mailbox = extern struct {
         std.debug.assert(buffer[1] == mbox_request);
         const mb_addr: u32 = @intCast(@intFromPtr(&buffer));
         const wr = mb_addr | chan_arm_to_vc;
-        while ((self.status & mbox_full_mask) != 0) {}
+        var us: usize = 0;
+        while (
+            (self.status & mbox_full_mask) != 0 and
+            us < send_timeout_us
+        ) : (us += 1) {
+            arm.usleep(1);
+        }
+        if (us == send_timeout_us)
+            return SendError.Timeout;
         self.write = wr;
 
         while (true) {
-            while ((self.status & mbox_empty_mask) != 0) {}
-            if (wr == self.read)
-                return buffer[1] == mbox_response;
+            us = 0;
+            while (
+                (self.status & mbox_empty_mask) != 0 and
+                us < send_timeout_us
+            ) : (us += 1) {
+                arm.usleep(1);
+            }
+            if (us == send_timeout_us)
+                return SendError.Timeout;
+            if (wr == self.read) {
+                if (buffer[1] != mbox_response)
+                    return SendError.InvalidResponse;
+                return;
+            }
         }
+    }
+
+    fn mboxFatal(err: SendError) noreturn {
+        std.debug.panic("Got unexpected firmware error in mailbox " ++
+            "interface: {}", .{err});
     }
 
     /// Retrieve the system's serial number from the mailbox.
     pub fn serialNumber() u64 {
         const T = Package(.{SerialNumber});
         T.init();
-        if (!T.send())
-            return 0xDEADBEEF;
+        T.send();
         return T.payload(0).serial();
     }
 
@@ -54,8 +80,7 @@ pub const Mailbox = extern struct {
     pub fn firmwareRevision() u32 {
         const T = Package(.{FirmwareRevision});
         T.init();
-        if (!T.send())
-            return 0xDEADBEEF;
+        T.send();
         return T.payload(0).firmware_revision;
     }
 
@@ -64,8 +89,7 @@ pub const Mailbox = extern struct {
         const T = Package(.{GetClockSpeed});
         T.init();
         T.payload(0).id = clock;
-        if (!T.send())
-            return 0xDEADBEEF;
+        T.send();
         return T.payload(0).speed;
     }
 
@@ -75,8 +99,7 @@ pub const Mailbox = extern struct {
         const T = Package(.{GetClockSpeedEx});
         T.init();
         T.payload(0).id = clock;
-        if (!T.send())
-            return 0xDEADBEEF;
+        T.send();
         return T.payload(0).speed;
     }
 
@@ -88,8 +111,7 @@ pub const Mailbox = extern struct {
         const scs = T.payload(0);
         scs.id = clock;
         scs.speed = hz;
-        if (!T.send())
-            return 0xDEADBEEF;
+        T.send();
         return scs.speed;
     }
 };
@@ -368,8 +390,8 @@ pub fn Package(comptime payloads: anytype) type {
         }
 
         /// Send the package to the VC mailbox.
-        pub fn send() bool {
-            return Mailbox.resource.send();
+        pub fn send() void {
+            Mailbox.resource.send() catch |err| Mailbox.mboxFatal(err);
         }
     };
 }

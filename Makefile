@@ -14,7 +14,7 @@ $(ELF): $(ZIG_SOURCES) $(ASM_SOURCES) $(LINKER)
 	zig build
 
 run: $(IMG)
-	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial stdio -d int
+	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -drive file=sdcard.raw,if=sd,format=raw -serial stdio
 
 clean:
 	rm -f $(ELF) $(IMG)

@@ -18,8 +18,7 @@ export fn handleIRQ() void {
 
 export fn main() noreturn {
     core.initCore();
-    const fb = lib.gfx.FrameBuffer.init(1024, 768, .rgb) catch
-        fatal("Unable to create FrameBuffer!", @src());
+    const fb = lib.gfx.FrameBuffer.init(1024, 768, .rgb);
     var tty = lib.io.Terminal.init(
         &fb,
         font,
@@ -28,13 +27,10 @@ export fn main() noreturn {
         0
     ) catch unreachable;
     const writer = tty.writer();
-    writer.writeAll("Enabling interrupts every second.. " ++
-        "check QEMU serial output") catch unreachable;
-
-    hw.arm.writeReg("cntp_tval_el0", @intCast(hw.arm.cntfrq_el0()));
-    hw.arm.writeReg("cntp_ctl_el0", 1);
-    hw.arm.Peripherals.resource.core_timers_interrupt_control[0] |=
-        @as(u32, 1) << 1;
+    const sd = lib.SDCard.init() catch unreachable;
+    writer.print("EMMC initialized and SD card loaded\n", .{})
+        catch unreachable;
+    _ = sd;
 
     while (true) {}
 }
