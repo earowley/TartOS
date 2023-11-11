@@ -11,7 +11,16 @@ workerCpu:
     b workerCpu
 
 mainCpu:
+    mrs x0, currentel
+    and x0, x0, #0xC
+    cmp x0, #0xC
+    beq workerCpu
+    cmp x0, #8
+    beq execEL2
     ldr x1, =resetVector
     mov sp, x1
     bl initHardware
     b main
+
+execEL2:
+    

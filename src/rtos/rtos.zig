@@ -33,19 +33,8 @@ export fn main() noreturn {
         0
     ) catch unreachable;
     const writer = tty.writer();
-    writer.print("clearing screen...\n", .{}) catch unreachable;
-    const spinners = [_]u8{'-', '\\', '|', '/'};
-    const sx = tty.cursor_x;
-    const sy = tty.cursor_y;
-
-    for (0..40) |idx| {
-        tty.writeASCIIByte(spinners[idx & 3]);
-        tty.cursor_x = sx;
-        tty.cursor_y = sy;
-        hw.arm.usleep(100000);
-    }
-
-    tty.clear();
+    writer.print("Current execution level: {}\n",
+        .{hw.arm.currentEL()}) catch unreachable;
 
     while (true) {}
 }
