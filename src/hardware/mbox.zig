@@ -124,7 +124,7 @@ pub const ClockID = enum(u32) {
     emmc,
     uart,
     arm,
-    core,
+    system,
     v3d,
     h264,
     isp,

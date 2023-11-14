@@ -33,7 +33,7 @@ pub fn initMU() SerialError!MUWriter {
         return mu_writer;
     }
     const baud = 115200;
-    const sys_clk = Mailbox.clockSpeed(.core);
+    const sys_clk = Mailbox.clockSpeed(.system);
     const bd = ((sys_clk / baud) >> 3) - 1;
     current_writer = .mini_uart;
     // Alt5 = TXD1/RXD1 on these pins.

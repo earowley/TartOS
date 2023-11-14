@@ -1,5 +1,5 @@
 const std = @import("std");
-const hrng = @import("hardware").rng.RNG.resource;
+const hrng = @import("hardware").RNG.resource;
 
 fn betweenHRNG(a: u64, b: u64) u64 {
     var min: u64 = undefined;

@@ -47,7 +47,7 @@ execEL2:
 
 .align 11
 exceptionVectorEL1:
-.space 0x200
+.space 0x280
     stp x0, x1, [sp, #-16]!
     stp x2, x3, [sp, #-16]!
     stp x4, x5, [sp, #-16]!
@@ -56,7 +56,7 @@ exceptionVectorEL1:
     stp x10, x11, [sp, #-16]!
     stp x12, x13, [sp, #-16]!
     stp x14, x15, [sp, #-16]!
-    // ...
+    bl handleIRQ
     ldp x14, x15, [sp], #16
     ldp x12, x13, [sp], #16
     ldp x10, x11, [sp], #16

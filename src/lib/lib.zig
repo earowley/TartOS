@@ -6,5 +6,5 @@ const hw = @import("hardware");
 /// Hardware initialization function. Should always be called by the
 /// reset vector if any library functions are used.
 export fn initHardware() void {    
-    hw.rng.RNG.resource.init();
+    hw.RNG.resource.init();
 }

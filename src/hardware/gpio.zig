@@ -84,6 +84,20 @@ pub const GPIO = extern struct {
         self.gppud = 0;
         self.gppudclk[idx] = 0;
     }
+
+    /// Set `pin` to generate an interrupt on high voltage.
+    pub fn setHighDetect(self: Self, pin: u8) void {
+        std.debug.assert(pin < pin_count);
+        const idx: usize = if (pin < 32) 0 else 1;
+        self.gphen[idx] |= (@as(u32, 1) << @intCast(pin & 31));
+    }
+
+    /// Set `pin` to generate an interrupt on low voltage.
+    pub fn setLowDetect(self: Self, pin: u8) void {
+        std.debug.assert(pin < pin_count);
+        const idx: usize = if (pin < 32) 0 else 1;
+        self.gplen[idx] |= (@as(u32, 1) << @intCast(pin & 31));
+    }
 };
 
 /// Available functions for GPIO pins.

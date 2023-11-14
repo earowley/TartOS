@@ -12,17 +12,12 @@ const raw_psf align(@alignOf(lib.gfx.PCScreenFont)) = @embedFile(
 ).*;
 const font: *const lib.gfx.PCScreenFont = @ptrCast(&raw_psf);
 
+export fn handleIRQ() void {
+    hw.arm.writeReg("cntp_tval_el0", @intCast(hw.arm.cntfrq_el0()));
+}
+
 export fn main() noreturn {
     core.initCore();
-    core.printf("serial number: 0x{X}\n",
-        .{Mailbox.serialNumber()});
-    core.printf("firmware revision: 0x{X}\n",
-        .{Mailbox.firmwareRevision()});
-    core.printf("core clock speed: {} MHz\n",
-        .{Mailbox.clockSpeed(.core)/1000000});
-    core.printf("arm clock speed: {} MHz\n",
-        .{Mailbox.clockSpeed(.arm)/1000000});
-    core.printf("random value is: {}\n", .{rand.between(u16, 1, 1000)});
     const fb = lib.gfx.FrameBuffer.init(1024, 768, .rgb) catch
         fatal("Unable to create FrameBuffer!", @src());
     var tty = lib.io.Terminal.init(
@@ -33,8 +28,13 @@ export fn main() noreturn {
         0
     ) catch unreachable;
     const writer = tty.writer();
-    writer.print("Current execution level: {}\n",
-        .{hw.arm.currentEL()}) catch unreachable;
+    writer.writeAll("Enabling interrupts every second.. " ++
+        "check QEMU serial output") catch unreachable;
+
+    hw.arm.writeReg("cntp_tval_el0", @intCast(hw.arm.cntfrq_el0()));
+    hw.arm.writeReg("cntp_ctl_el0", 1);
+    hw.arm.Peripherals.resource.core_timers_interrupt_control[0] |=
+        @as(u32, 1) << 1;
 
     while (true) {}
 }
