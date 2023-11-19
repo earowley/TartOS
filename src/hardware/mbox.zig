@@ -84,6 +84,22 @@ pub const Mailbox = extern struct {
         return T.payload(0).firmware_revision;
     }
 
+    /// Retrieve a `MemoryInfo` structure that defines the boundaries
+    /// of ARM and VC memory.
+    pub fn meminfo() MemoryInfo {
+        const T = Package(.{GetARMMemory, GetVCMemory});
+        T.init();
+        T.send();
+        const arm_info = T.payload(0);
+        const vc_info = T.payload(1);
+        const a: [*]allowzero u8 = @ptrFromInt(arm_info.base);
+        const v: [*]allowzero u8 = @ptrFromInt(vc_info.base);
+        return .{
+            .arm = a[0..arm_info.size],
+            .vc = v[0..vc_info.size],
+        };
+    }
+
     /// Retrieve the clock speed (in Hz) of `clock` from the mailbox.
     pub fn clockSpeed(clock: ClockID) u32 {
         const T = Package(.{GetClockSpeed});
@@ -120,6 +136,8 @@ const Tag = enum(u32) {
     terminator = 0x0,
     get_firmware_revision = 0x1,
     get_serial = 0x10004,
+    get_arm_memory = 0x10005,
+    get_vc_memory = 0x10006,
     get_clock_rate = 0x30002,
     get_clock_rate_measured = 0x30047,
     set_clock_rate = 0x38002,
@@ -132,6 +150,12 @@ const Tag = enum(u32) {
     set_frame_buffer_pixel_order = 0x48006,
     get_frame_buffer_pitch = 0x40008,
     set_virtual_frame_buffer_offset = 0x48009,
+};
+
+/// Memory information encoded as slices.
+pub const MemoryInfo = struct {
+    arm: []allowzero u8,
+    vc: []allowzero u8,
 };
 
 /// Possible pixel orders for the GPU frame buffer.
@@ -179,6 +203,30 @@ pub const SerialNumber = extern struct {
     pub fn serial(self: Self) u64 {
         return (@as(u64, self.serial_high) << 32) | self.serial_low;
     }
+};
+
+/// Get ARM memory information.
+pub const GetARMMemory = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.get_arm_memory),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    base: u32 = 0,
+    size: u32 = 0,
+};
+
+/// Get VC memory information.
+pub const GetVCMemory = extern struct {
+    const Self = @This();
+    const len = @sizeOf(Self) / @sizeOf(u32);
+
+    tag: u32 = @intFromEnum(Tag.get_vc_memory),
+    buf_bytes: u32 = @sizeOf(Self) - 12,
+    kind: u32 = Mailbox.mbox_request,
+    base: u32 = 0,
+    size: u32 = 0,
 };
 
 /// Get firmware revision tag information.

@@ -27,10 +27,18 @@ export fn main() noreturn {
         0
     ) catch unreachable;
     const writer = tty.writer();
-    const sd = lib.SDCard.init() catch unreachable;
-    writer.print("EMMC initialized and SD card loaded\n", .{})
+    const p = lib.mem.page_allocator.allocPages(60) catch unreachable;
+    writer.print("{} page @ 0x{X}\n", .{p.len, @intFromPtr(p.ptr)})
         catch unreachable;
-    _ = sd;
+    writer.print("cluster0: {}  bits0: 0x{X}\n", .{
+        lib.mem.page_allocator.clusters[0],
+        lib.mem.page_allocator.allocated.masks[0]
+    }) catch unreachable;
+    lib.mem.page_allocator.freePages(p);
+    writer.print("cluster0: {}  bits0: 0x{X}\n", .{
+        lib.mem.page_allocator.clusters[0],
+        lib.mem.page_allocator.allocated.masks[0]
+    }) catch unreachable;
 
     while (true) {}
 }

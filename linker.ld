@@ -3,6 +3,7 @@ ENTRY(resetVector)
 SECTIONS
 {
 	. = 0x80000;
+	__kernel_start = .;
 
 	.text : {
 		*(.text)
@@ -18,10 +19,11 @@ SECTIONS
 	}
 
 	.bss (NOLOAD) : ALIGN(16) {
-		__bss_start = .;
 		*(.bss)
 		*(COMMON)
-		. = ALIGN(8);
-		__bss_end = .;
 	}
+
+	. = ALIGN(4096);
+	__kernel_end = .;
+	__kernel_size = __kernel_end - __kernel_start;
 }

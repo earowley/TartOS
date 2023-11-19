@@ -21,6 +21,8 @@ mainCpu:
 execEL1:
     adr x0, resetVector
     mov sp, x0
+    ldr x0, =__kernel_start
+    ldr x1, =__kernel_size
     bl initHardware
     b main
 
