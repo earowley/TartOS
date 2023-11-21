@@ -17,6 +17,9 @@ const SerialStreamSource = enum {
     uart,
 };
 
+/// Provides a reader/writer interface for one of the serial interfaces.
+/// A structure of this type should **only** ever be created by the
+/// `SerialStream.initMU` or `SerialStream.initUART` functions.
 pub const SerialStream = struct {
     var current_stream: ?SerialStreamSource = null;
     var writeFn: *const fn([]const u8) usize = undefined;

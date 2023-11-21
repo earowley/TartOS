@@ -10,6 +10,7 @@ pub fn build(b: *std.Build) void {
 
     // Use the optimization settings from command line.
     const optimize = b.standardOptimizeOption(.{});
+    const optimize_chainloader = std.builtin.Mode.Debug;
     const hardware = b.createModule(std.build.CreateModuleOptions{
         .source_file = .{.path = "src/hardware/hardware.zig"},
     });
@@ -28,10 +29,17 @@ pub fn build(b: *std.Build) void {
     });
 
     const exe = b.addExecutable(.{
-        .name = "rtos",
+        .name = "app",
         .root_source_file = .{.path = "src/rtos/rtos.zig"},
         .target = target,
         .optimize = optimize,
+    });
+
+    const chainloader = b.addExecutable(.{
+        .name = "chainloader",
+        .root_source_file = .{.path = "chainloader/main.zig"},
+        .target = target,
+        .optimize = optimize_chainloader,
     });
 
     exe.addModule("lib", lib);
@@ -41,5 +49,13 @@ pub fn build(b: *std.Build) void {
         "src/reset/reset_vector.s"
     ));
     exe.setLinkerScript(std.build.FileSource.relative("linker.ld"));
+
+    chainloader.addModule("lib", lib);
+    chainloader.addAssemblyFile(std.build.FileSource.relative(
+        "chainloader/reset_vector.s"
+    ));
+    chainloader.setLinkerScript(std.build.FileSource.relative(
+        "chainloader/linker.ld"));
     b.installArtifact(exe);
+    b.installArtifact(chainloader);
 }

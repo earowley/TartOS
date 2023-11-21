@@ -7,7 +7,7 @@ resetVector:
     cbz x0, mainCpu
 
 workerCpu:
-    wfe 
+    wfe
     b workerCpu
 
 mainCpu:
