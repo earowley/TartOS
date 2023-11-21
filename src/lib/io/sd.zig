@@ -25,7 +25,10 @@ pub const SDCardError = error {
 
 /// Structure for working with SD cards and the EMMC controller.
 pub const SDCard = struct {
+    /// Block size in bytes.
     pub const block_size = 512;
+    /// Block size in data register widths.
+    pub const block_size_dw = block_size / @sizeOf(u32);
     cid: emmc.CID = .{},
     ocr: emmc.OCR = .{},
     csd: emmc.CSD = .{.standard_capacity = .{}},
@@ -61,10 +64,10 @@ pub const SDCard = struct {
     }
 
     /// Reads block number `n` from the SD card.
-    pub fn readBlock(self: SDCard, n: u32, buffer: *[block_size]u32)
+    pub fn readBlock(self: SDCard, n: u32, buffer: *[block_size_dw]u32)
       void {
         const address = if (self.ocr.ccs) n else n << 9;
-        const reads = block_size / 4;
+        const reads = block_size_dw;
         var blk: emmc.BlockSizeCount = @bitCast(res.block_size_count);
         blk.block_size = block_size;
         blk.block_count = 1;

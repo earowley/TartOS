@@ -2,43 +2,44 @@ const std = @import("std");
 const lib = @import("lib");
 const hw = @import("hardware");
 const core = @import("core.zig");
-const serial = lib.io.serial;
-const rand = lib.rand;
-const Mailbox = hw.mbox.Mailbox;
 const StackTrace = std.builtin.StackTrace;
 
-const raw_psf align(@alignOf(lib.gfx.PCScreenFont)) = @embedFile(
-    "assets/font.psf"
-).*;
-const font: *const lib.gfx.PCScreenFont = @ptrCast(&raw_psf);
+const LogoHeader = struct {
+    w: u16,
+    h: u16,
+};
 
 export fn handleIRQ() void {
-    hw.arm.writeReg("cntp_tval_el0", @intCast(hw.arm.cntfrq_el0()));
 }
 
 export fn main() noreturn {
     core.initCore();
     const fb = lib.gfx.FrameBuffer.init(1024, 768, .rgb);
-    var tty = lib.io.Terminal.init(
-        &fb,
-        font,
-        10,
-        30,
-        0
-    ) catch unreachable;
-    const writer = tty.writer();
-    const p = lib.mem.page_allocator.allocPages(60) catch unreachable;
-    writer.print("{} page @ 0x{X}\n", .{p.len, @intFromPtr(p.ptr)})
-        catch unreachable;
-    writer.print("cluster0: {}  bits0: 0x{X}\n", .{
-        lib.mem.page_allocator.clusters[0],
-        lib.mem.page_allocator.allocated.masks[0]
-    }) catch unreachable;
-    lib.mem.page_allocator.freePages(p);
-    writer.print("cluster0: {}  bits0: 0x{X}\n", .{
-        lib.mem.page_allocator.clusters[0],
-        lib.mem.page_allocator.allocated.masks[0]
-    }) catch unreachable;
+    const sd = lib.SDCard.init() catch unreachable;
+    var buffer: [lib.SDCard.block_size_dw]u32 = undefined;
+    sd.readBlock(0, &buffer);
+    const hdr = @as(*const LogoHeader, @ptrCast(&buffer)).*;
+    var rect = fb.iterRect(
+        (fb.width - hdr.w) / 2,
+        (fb.height - hdr.h) / 2,
+        hdr.w,
+        hdr.h
+    );
+    const pixels = @as(u32, hdr.w) * @as(u32, hdr.h);
+    var pixels_written: u32 = 0;
+    var pixel_data: []const u32 = buffer[1..];
+    var block: u32 = 1;
+
+    draw: while (pixels_written < pixels) : (block += 1) {
+        const to_copy = @min(pixel_data.len, pixels - pixels_written);
+        for (pixel_data[0..to_copy]) |raw| {
+            const p = rect.next() orelse break :draw;
+            p.val = raw;
+        }
+        pixels_written += to_copy;
+        sd.readBlock(block, &buffer);
+        pixel_data = buffer[0..];
+    }
 
     while (true) {}
 }

@@ -229,7 +229,7 @@ pub const EMMC = extern struct {
             stat.data_busy and
             us < data_timeout_us
         ) : (stat = self.status()) {
-            arm.waitCycles(100);
+            arm.usleep(1);
             us += 1;
         }
         ctl1.sd_clock_en = false;

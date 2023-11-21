@@ -2,6 +2,7 @@ pub const gfx = @import("gfx/gfx.zig");
 pub const io = @import("io/io.zig");
 pub const mem = @import("mem/mem.zig");
 pub const rand = @import("rand.zig");
+pub const Iterator = @import("iterator.zig").Iterator;
 pub const SDCard = @import("io/sd.zig").SDCard;
 const hw = @import("hardware");
 const std = @import("std");

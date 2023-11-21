@@ -1,5 +1,6 @@
 const std = @import("std");
 const hw = @import("hardware");
+const Iterator = @import("../iterator.zig").Iterator;
 const mbox = hw.mbox;
 
 /// An interface for creating and interacting with a GPU frame buffer.
@@ -9,14 +10,14 @@ pub const FrameBuffer = struct {
 
     address: usize,
     size: u32,
-    width: u32,
-    height: u32,
     bytes_per_row: u32,
+    width: u16,
+    height: u16,
 
     /// Use the firmware interface to create a frame buffer.
     pub fn init(
-        width: u32,
-        height: u32,
+        width: u16,
+        height: u16,
         pixel_order: mbox.FrameBufferPixelOrder
     ) FrameBuffer {
         const P = mbox.Package(.{
@@ -50,8 +51,8 @@ pub const FrameBuffer = struct {
         return .{
             .address = alloc.in_align_out_address,
             .size = alloc.size_bytes,
-            .width = phys.width,
-            .height = phys.height,
+            .width = @intCast(phys.width),
+            .height = @intCast(phys.height),
             .bytes_per_row = P.payload(6).bytes_per_row,
         };
     }
@@ -77,14 +78,14 @@ pub const FrameBuffer = struct {
 
     /// Get a pointer to the pixel data at the coordinate `x`, `y` or
     /// null if the pixel does not exist.
-    pub fn pixelAt(self: FrameBuffer, x: u32, y: u32) ?*Pixel {
+    pub fn pixelAt(self: FrameBuffer, x: u16, y: u16) ?*Pixel {
         if (x >= self.width or y >= self.height)
             return null;
         return self.pixelAtUnchecked(x, y);
     }
 
     /// Get a pointer to the pixel data at the coordinate `x`, `y`.
-    pub fn pixelAtUnchecked(self: FrameBuffer, x: u32, y: u32) *Pixel {
+    pub fn pixelAtUnchecked(self: FrameBuffer, x: u16, y: u16) *Pixel {
         return @ptrFromInt(
             self.address + 
             y * self.bytes_per_row + 
@@ -93,13 +94,55 @@ pub const FrameBuffer = struct {
     }
 
     /// Get the raw pixel data in bytes from rows [`start`, `end`).
-    pub fn rowDataUnchecked(self: FrameBuffer, start: u32, end: u32)
+    pub fn rowDataUnchecked(self: FrameBuffer, start: u16, end: u16)
       []u8 {
         const length = end - start;
         const p: [*]u8 = @ptrFromInt(
             self.address + start * self.bytes_per_row
         );
         return p[0..length*self.bytes_per_row];
+    }
+
+    /// Get an iterator over the pixels of a rectangle starting at
+    /// coordinates `x`, `y` with dimensions `width` and `height`.
+    pub fn iterRect(
+        self: *const FrameBuffer,
+        x: u16,
+        y: u16,
+        width: u16,
+        height: u16
+    ) Iterator(*Pixel, RectIterContext, RectIterContext.nextFn) {
+        return .{
+            .cxt = .{
+                .fb = self,
+                .width = width,
+                .height = height,
+                .off_x = x,
+                .off_y = y,
+            }
+        };
+    }
+};
+
+const RectIterContext = struct {
+    fb: *const FrameBuffer,
+    width: u16,
+    height: u16,
+    off_x: u16,
+    off_y: u16,
+    x: u16 = 0,
+    y: u16 = 0,
+
+    fn nextFn(cxt: *RectIterContext) ?*Pixel {
+        if (cxt.y >= cxt.height) return null;
+        const result = cxt.fb.pixelAt(cxt.off_x + cxt.x,
+            cxt.off_y + cxt.y);
+        cxt.x += 1;
+        if (cxt.x >= cxt.width) {
+            cxt.x = 0;
+            cxt.y += 1;
+        }
+        return result;
     }
 };
 
@@ -153,8 +196,8 @@ pub const Grid = struct {
             frame_buffer.height > max_dim
         )
             return GridError.UnsupportedFrame;
-        const rem_x: u16 = @intCast(frame_buffer.width - sub_x);
-        const rem_y: u16 = @intCast(frame_buffer.height - sub_y);
+        const rem_x = frame_buffer.width - sub_x;
+        const rem_y = frame_buffer.height - sub_y;
         if (section_width > rem_x or section_height > rem_y)
             return GridError.ZeroSections;
 
