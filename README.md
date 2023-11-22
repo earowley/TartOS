@@ -28,14 +28,16 @@ from a package manager):
 To start, check that Zig is correctly setup:
 ```shell
 # This should make an ELF file under zig-out/bin
-$ make elf
+$ make appelf
+$ file zig-out/bin/app
+zig-out/bin/app: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, with debug_info, not stripped
 ```
 
 Next, check that llvm-objcopy can create the image file, or use
 another solution to do so:
 ```shell
-# This should make an image file called kernel8.img
-$ make img
+# This should make an image file under artifacts/ called app.img
+$ make app
 ```
 
 ## Running
