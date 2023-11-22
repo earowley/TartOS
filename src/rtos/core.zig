@@ -1,15 +1,15 @@
 const lib = @import("lib");
 
-var writer: lib.io.serial.UARTWriter = undefined;
+var stream: lib.io.serial.SerialStream = undefined;
 
 /// Initialize the RTOS core.
 pub fn initCore() void {
-    writer = lib.io.serial.initUART() catch unreachable;
+    stream = lib.io.serial.SerialStream.initUART() catch unreachable;
 }
 
 /// Print a string using the default writer.
 pub fn print(s: []const u8) void {
-    writer.writeAll(s) catch unreachable;
+    stream.writer().writeAll(s) catch unreachable;
 }
 
 /// Print a string using the default writer and ensure the string is
@@ -22,5 +22,22 @@ pub fn println(s: []const u8) void {
 
 /// Print a formatted string using the default writer.
 pub fn printf(comptime fmt: []const u8, args: anytype) void {
-    writer.print(fmt, args) catch unreachable;
+    stream.writer().print(fmt, args) catch unreachable;
+}
+
+/// Reads characters until a newline is encountered, or until `buffer`
+/// is full.
+pub fn gets(buffer: []u8) usize {
+    const reader = stream.reader();
+    for (buffer, 0..) |*b, n| {
+        const data = reader.readByte() catch unreachable;
+        b.* = data;
+        if (data == '\r') return n;
+    }
+    return buffer.len;
+}
+
+/// Reads bytes from serial input until `buffer` is full.
+pub fn read(buffer: []u8) usize {
+    stream.reader().read(buffer) catch unreachable;
 }
