@@ -49,10 +49,11 @@ $ make run
 ```
 
 ## Resources
-* [Tutorial](https://github.com/bztsrc/raspi3-tutorial) - Individual tutorials for kickstarting bare metal development on the Raspberry Pi 3
+* [Tutorial](https://github.com/bztsrc/raspi3-tutorial) - Individual tutorials for kickstarting bare metal development on the Raspberry Pi 3.
 * [BCM2835 SoC Peripherals](https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf) - Peripheral manual for the Broadcom SoC. Introduced in Raspberry Pi, but peripheral architecture is identical for Raspberry Pi 2/3.
 * [BCM2836 ARM-Local Peripherals](https://datasheets.raspberrypi.com/bcm2836/bcm2836-peripherals.pdf) - ARM-Local peripheral documentation. Introduced in Raspberry Pi 2 to accommodate quad-core architecture. Architecture is identical for Raspberry Pi 3.
-* [ARM Cortex-A53](https://developer.arm.com/documentation/ddi0500/j) - Documentation for the CPU core on the Raspberry Pi 3
-* [ARMv8-A Architecture Registers](https://developer.arm.com/documentation/ddi0595/2021-12?lang=en) - Summary of special registers on the ARMv8-A architecture
-* [ARMv8-A Programmer's Guide](https://developer.arm.com/documentation/den0024/a/) - Programmers reference guide for the ARMv8-A architecture
-* [Boot Code Examples](https://developer.arm.com/documentation/dai0527/latest/) - Example ASM boot code for the ARMv8-A architecture
+* [ARM Cortex-A53](https://developer.arm.com/documentation/ddi0500/j) - Documentation for the CPU core on the Raspberry Pi 3.
+* [ARMv8-A Architecture Registers](https://developer.arm.com/documentation/ddi0595/2021-12?lang=en) - Summary of special registers on the ARMv8-A architecture.
+* [ARMv8-A Programmer's Guide](https://developer.arm.com/documentation/den0024/a/) - Programmers reference guide for the ARMv8-A architecture.
+* [ARMv8-A Address Translation Primer](https://developer.arm.com/documentation/100940/latest/) - Good intro to understand the MMU and required registers.
+* [Boot Code Examples](https://developer.arm.com/documentation/dai0527/latest/) - Example ASM boot code for the ARMv8-A architecture. Notably: the transition of exception levels.
